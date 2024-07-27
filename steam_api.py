@@ -51,7 +51,7 @@ def query_app_reviews(session: requests.Session, appid: int):
             cursor = data["cursor"]
             if cursor == "*":
                 break
-            time.sleep(2)
+            time.sleep(0.93)
     return result
 
 
