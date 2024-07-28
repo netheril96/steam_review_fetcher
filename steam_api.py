@@ -10,9 +10,11 @@ class App(TypedDict):
 
 
 def query_all_apps(session: requests.Session) -> list[App]:
-    return session.get("http://api.steampowered.com/ISteamApps/GetAppList/v2").json()[
-        "applist"
-    ]["apps"]
+    result: list[App] = session.get(
+        "http://api.steampowered.com/ISteamApps/GetAppList/v2"
+    ).json()["applist"]["apps"]
+    result.sort(key=lambda l: l["appid"])
+    return result
 
 
 def query_app_details(session: requests.Session, appid: int):
