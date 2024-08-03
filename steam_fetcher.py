@@ -91,7 +91,11 @@ def main(mode: str):
                     if not current_result:
                         continue
                     (data,) = current_result
+                    if not data:
+                        continue
                     details = json.loads(decompressor.decompress(data))
+                    if not details:
+                        continue
                     try:
                         data = details[str(app["appid"])]["data"]
                         if (
