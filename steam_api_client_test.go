@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,7 +37,7 @@ func TestSteamApiClient_ListAppIds(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	var client = SteamApiClient{httpClient: http.DefaultClient, appListUrl: server.URL}
+	var client = SteamApiClient{httpClient: resty.New(), appListUrl: server.URL}
 
 	appListResult, err := client.ListAppIds()
 	if err != nil {

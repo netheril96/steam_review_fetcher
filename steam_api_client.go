@@ -2,19 +2,19 @@ package steamreviewfetcher
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"slices"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/goccy/go-json"
 )
 
 type SteamApiClient struct {
-	httpClient *http.Client
+	httpClient *resty.Client
 	appListUrl string
 }
 
-func NewSteamApiClient(httpClient *http.Client) *SteamApiClient {
+func NewSteamApiClient(httpClient *resty.Client) *SteamApiClient {
 	return &SteamApiClient{httpClient: httpClient, appListUrl: "http://api.steampowered.com/ISteamApps/GetAppList/v2"}
 }
 
@@ -32,20 +32,15 @@ func (p *SteamApiClient) ListAppIds() ([]int, error) {
 		AppList appList `json:"applist"`
 	}
 
-	resp, err := p.httpClient.Get(p.appListUrl)
+	resp, err := p.httpClient.R().Get(p.appListUrl)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("wrong status code: %d", resp.StatusCode)
-	}
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("wrong status code: %d", resp.StatusCode())
 	}
 	var apiRes apiResponse
-	err = json.Unmarshal(body, &apiRes)
+	err = json.Unmarshal(resp.Body(), &apiRes)
 	if err != nil {
 		return nil, err
 	}
