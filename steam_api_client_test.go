@@ -10,17 +10,16 @@ import (
 	"testing"
 
 	"github.com/go-resty/resty/v2"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestSteamApiClient_ListAppIds(t *testing.T) {
+func createTestServer(testResponseFile string) *httptest.Server {
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
-		t.Fatal("Could not get current filename")
+		panic("Could not get current filename")
 	}
 	testDir := filepath.Dir(filename)
-
-	testFilePath := filepath.Join(testDir, "testdata", "applist.json")
+	testFilePath := filepath.Join(testDir, "testdata", testResponseFile)
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Simulate a successful response
@@ -28,13 +27,17 @@ func TestSteamApiClient_ListAppIds(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		file, err := os.Open(testFilePath)
 		if err != nil {
-			t.Fatal(err.Error())
+			panic(err)
 		}
 		defer file.Close()
 		io.Copy(w, file)
 	})
 
-	server := httptest.NewServer(handler)
+	return httptest.NewServer(handler)
+}
+
+func TestSteamApiClient_ListAppIds(t *testing.T) {
+	server := createTestServer("applist.json")
 	defer server.Close()
 
 	var client = SteamApiClient{httpClient: resty.New(), appListUrl: server.URL}
@@ -43,8 +46,19 @@ func TestSteamApiClient_ListAppIds(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	assert.Contains(t, appListResult, 1835850)
-	assert.Contains(t, appListResult, 1835930)
-	assert.Contains(t, appListResult, 1835570)
-	assert.NotContains(t, appListResult, 1111)
+	require.Contains(t, appListResult, 1835850)
+	require.Contains(t, appListResult, 1835930)
+	require.Contains(t, appListResult, 1835570)
+	require.NotContains(t, appListResult, 1111)
+}
+
+func TestSteamApiClient_QueryAppDetails(t *testing.T) {
+	server := createTestServer("appdetails.json")
+	defer server.Close()
+
+	var client = SteamApiClient{httpClient: resty.New(), appDetailsUrl: server.URL}
+
+	appListResult, err := client.QueryAppDetails(1997660)
+	require.Nil(t, err)
+	require.Contains(t, string(appListResult), "Early Access")
 }
