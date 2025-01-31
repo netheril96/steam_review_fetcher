@@ -9,23 +9,30 @@ import (
 	"github.com/goccy/go-json"
 )
 
-const APP_LIST_URL = "http://api.steampowered.com/ISteamApps/GetAppList/v2"
-
-type app struct {
-	AppID int    `json:"appid"`
-	Name  string `json:"name"`
+type SteamApiClient struct {
+	httpClient *http.Client
+	appListUrl string
 }
 
-type appList struct {
-	Apps []app `json:"apps"`
+func NewSteamApiClient(httpClient *http.Client) *SteamApiClient {
+	return &SteamApiClient{httpClient: httpClient, appListUrl: "http://api.steampowered.com/ISteamApps/GetAppList/v2"}
 }
 
-type apiResponse struct {
-	AppList appList `json:"applist"`
-}
+func (p *SteamApiClient) ListAppIds() ([]int, error) {
+	type app struct {
+		AppID int    `json:"appid"`
+		Name  string `json:"name"`
+	}
 
-func ListAppIds(url string) ([]int, error) {
-	resp, err := http.DefaultClient.Get(url)
+	type appList struct {
+		Apps []app `json:"apps"`
+	}
+
+	type apiResponse struct {
+		AppList appList `json:"applist"`
+	}
+
+	resp, err := p.httpClient.Get(p.appListUrl)
 	if err != nil {
 		return nil, err
 	}

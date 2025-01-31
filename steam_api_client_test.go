@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestListAppIds(t *testing.T) {
+func TestSteamApiClient_ListAppIds(t *testing.T) {
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
 		t.Fatal("Could not get current filename")
@@ -36,7 +36,9 @@ func TestListAppIds(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	appListResult, err := ListAppIds(server.URL)
+	var client = SteamApiClient{httpClient: http.DefaultClient, appListUrl: server.URL}
+
+	appListResult, err := client.ListAppIds()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
