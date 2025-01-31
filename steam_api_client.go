@@ -83,3 +83,34 @@ func (p *SteamApiClient) QueryAppDetails(appid int) (raw []byte, err error) {
 	}
 	return nil, fmt.Errorf("the response is a failure:\n%s", string(resp.Body()))
 }
+
+func (p *SteamApiClient) QueryAppReview(appid int, cursor string) (raw []byte, newCursor string, err error) {
+	resp, err := p.httpClient.R().
+		SetQueryParam("json", "1").
+		SetQueryParam("filter", "recent").
+		SetQueryParam("num_per_page", "100").
+		SetQueryParam("cursor", cursor).
+		Get(fmt.Sprintf("%s/%d", p.appReviewUrl, appid))
+	if err != nil {
+		return
+	}
+	if resp.StatusCode() != http.StatusOK {
+		err = fmt.Errorf("wrong status %s", resp.Status())
+		return
+	}
+
+	type ReviewData struct {
+		Success int    `json:"success"`
+		Cursor  string `json:"cursor"`
+	}
+	var data ReviewData
+	err = json.Unmarshal(resp.Body(), &data)
+	if err != nil {
+		return
+	}
+	if data.Success == 0 {
+		err = fmt.Errorf("the response is a failure:\n%s", string(resp.Body()))
+		return
+	}
+	return resp.Body(), data.Cursor, nil
+}

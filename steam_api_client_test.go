@@ -62,3 +62,14 @@ func TestSteamApiClient_QueryAppDetails(t *testing.T) {
 	require.Nil(t, err)
 	require.Contains(t, string(appListResult), "Early Access")
 }
+
+func TestSteamApiClient_QueryAppReview(t *testing.T) {
+	server := createTestServer("appreview.json")
+	defer server.Close()
+
+	var client = SteamApiClient{httpClient: resty.New(), appReviewUrl: server.URL}
+	review, cursor, err := client.QueryAppReview(1997660, "*")
+	require.Nil(t, err)
+	require.Equal(t, cursor, "AoJ40tvSvJQDfp38xAU=")
+	require.Contains(t, string(review), "Spiders always does a great job")
+}
