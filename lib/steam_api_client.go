@@ -17,6 +17,13 @@ type SteamApiClient struct {
 	appReviewUrl  string
 }
 
+type EndOfReview struct{}
+
+// Error implements error.
+func (e *EndOfReview) Error() string {
+	return "end of reviews"
+}
+
 func NewSteamApiClient(httpClient *resty.Client) *SteamApiClient {
 	return &SteamApiClient{
 		httpClient:    httpClient,
@@ -92,25 +99,31 @@ func (p *SteamApiClient) QueryAppReview(appid int, cursor string) (raw []byte, n
 		SetQueryParam("cursor", cursor).
 		Get(fmt.Sprintf("%s/%d", p.appReviewUrl, appid))
 	if err != nil {
-		return
+		return nil, "", err
 	}
 	if resp.StatusCode() != http.StatusOK {
-		err = fmt.Errorf("wrong status %s", resp.Status())
-		return
+		return nil, "", fmt.Errorf("wrong status %s", resp.Status())
+	}
+
+	type QuerySummary struct {
+		NumReviews int `json:"num_reviews"`
 	}
 
 	type ReviewData struct {
-		Success int    `json:"success"`
-		Cursor  string `json:"cursor"`
+		Success      int          `json:"success"`
+		QuerySummary QuerySummary `json:"query_summary"`
+		Cursor       string       `json:"cursor"`
 	}
 	var data ReviewData
 	err = json.Unmarshal(resp.Body(), &data)
 	if err != nil {
-		return
+		return nil, "", err
 	}
 	if data.Success == 0 {
-		err = fmt.Errorf("the response is a failure:\n%s", string(resp.Body()))
-		return
+		return nil, "", fmt.Errorf("the response is a failure:\n%s", string(resp.Body()))
+	}
+	if data.QuerySummary.NumReviews <= 0 {
+		return nil, "", &EndOfReview{}
 	}
 	return resp.Body(), data.Cursor, nil
 }

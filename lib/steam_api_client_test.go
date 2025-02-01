@@ -19,7 +19,7 @@ func createTestServer(testResponseFile string) *httptest.Server {
 		panic("Could not get current filename")
 	}
 	testDir := filepath.Dir(filename)
-	testFilePath := filepath.Join(testDir, "testdata", testResponseFile)
+	testFilePath := filepath.Join(testDir, "../testdata", testResponseFile)
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Simulate a successful response
@@ -72,4 +72,13 @@ func TestSteamApiClient_QueryAppReview(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, cursor, "AoJ40tvSvJQDfp38xAU=")
 	require.Contains(t, string(review), "Spiders always does a great job")
+}
+
+func TestSteamApiClient_QueryAppReview_Empty(t *testing.T) {
+	server := createTestServer("empty_review.json")
+	defer server.Close()
+
+	var client = SteamApiClient{httpClient: resty.New(), appReviewUrl: server.URL}
+	_, _, err := client.QueryAppReview(1997660, "*")
+	require.ErrorIs(t, err, &EndOfReview{})
 }

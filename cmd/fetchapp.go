@@ -6,6 +6,7 @@ package cmd
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -23,13 +24,18 @@ var fetchappCmd = &cobra.Command{
 		var httpClient = resty.New()
 		httpClient.SetRetryCount(10)
 		var client = steamreviewfetcher.NewSteamApiClient(httpClient)
-		for cursor := "*"; cursor != ""; {
+		cursor := "*"
+		for {
 			raw, newCursor, err := client.QueryAppReview(appId, cursor)
 			if err != nil {
-				log.Fatalf("Failed to query app review %v", err)
+				if errors.Is(err, &steamreviewfetcher.EndOfReview{}) {
+					break
+				} else {
+					log.Fatalf("Failed to query app review %v", err)
+				}
 			}
 			hash := sha256.Sum224([]byte(cursor))
-			var filename = fmt.Sprintf("%d.%s", appId, hex.EncodeToString(hash[:5]))
+			var filename = fmt.Sprintf("%d.%s.json", appId, hex.EncodeToString(hash[:]))
 			err = os.WriteFile(filename, raw, 0644)
 			if err != nil {
 				log.Fatalf("Failed to write to %s: %v", filename, err)
