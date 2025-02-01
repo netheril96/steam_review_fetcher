@@ -16,9 +16,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// fetchappCmd represents the fetchapp command
-var fetchappCmd = &cobra.Command{
-	Use:   "fetchapp",
+// fetchreviewsCmd represents the fetchapp command
+var fetchreviewsCmd = &cobra.Command{
+	Use:   "fetchreviews",
 	Short: "Fetch all reviews for a single app",
 	Run: func(cmd *cobra.Command, args []string) {
 		var httpClient = resty.New()
@@ -47,7 +47,7 @@ var fetchappCmd = &cobra.Command{
 var appId int
 
 func init() {
-	rootCmd.AddCommand(fetchappCmd)
-	fetchappCmd.Flags().IntVar(&appId, "id", 0, "The ID of the Steam app")
-	fetchappCmd.MarkFlagRequired("id")
+	rootCmd.AddCommand(fetchreviewsCmd)
+	fetchreviewsCmd.Flags().IntVar(&appId, "id", 0, "The ID of the Steam app")
+	fetchreviewsCmd.MarkFlagRequired("id")
 }
