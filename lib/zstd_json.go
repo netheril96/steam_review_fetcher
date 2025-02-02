@@ -37,7 +37,7 @@ func WriteZstdJsonTemp(directory string, v interface{}) (filename string, err er
 		return "", err
 	}
 	defer rawWriter.Close()
-	writer, err := zstd.NewWriter(rawWriter)
+	writer, err := zstd.NewWriter(rawWriter, zstd.WithEncoderLevel(zstd.SpeedBetterCompression))
 	if err != nil {
 		return "", err
 	}
@@ -61,7 +61,7 @@ func WriteRawZstd(filename string, data []byte) error {
 		return err
 	}
 	defer rawWriter.Close()
-	writer, err := zstd.NewWriter(rawWriter)
+	writer, err := zstd.NewWriter(rawWriter, zstd.WithEncoderLevel(zstd.SpeedBetterCompression))
 	if err != nil {
 		return err
 	}
