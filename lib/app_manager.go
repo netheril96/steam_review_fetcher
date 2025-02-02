@@ -94,3 +94,27 @@ func (p *AppManager) ResumeFetch() error {
 		}
 	}
 }
+
+func (p *AppManager) ShouldSkip() bool {
+	if !p.game.Platforms.Windows {
+		return false
+	}
+	// Single player
+	if !anyOf(p.game.Categories, func(c Category) bool { return c.ID == 2 }) {
+		return false
+	}
+	// Early access
+	if anyOf(p.game.Genres, func(g Genre) bool { return g.ID == "70" }) {
+		return false
+	}
+	return p.game.ReleaseDate.ComingSoon
+}
+
+func anyOf[T any](slice []T, predicate func(T) bool) bool {
+	for _, element := range slice {
+		if predicate(element) {
+			return true // Found an element that satisfies the predicate
+		}
+	}
+	return false // No element satisfied the predicate
+}
