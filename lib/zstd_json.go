@@ -54,3 +54,18 @@ func WriteZstdJson(filename string, v interface{}) error {
 	}
 	return os.Rename(tmpname, filename)
 }
+
+func WriteRawZstd(filename string, data []byte) error {
+	rawWriter, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer rawWriter.Close()
+	writer, err := zstd.NewWriter(rawWriter)
+	if err != nil {
+		return err
+	}
+	defer writer.Close()
+	_, err = writer.Write(data)
+	return err
+}
