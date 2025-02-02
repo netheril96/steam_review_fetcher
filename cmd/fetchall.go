@@ -10,10 +10,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/fatih/color"
 	"github.com/go-resty/resty/v2"
 	steamreviewfetcher "github.com/netheril96/steam_review_fetcher/lib"
 	"github.com/spf13/cobra"
 	"github.com/vbauerster/mpb/v8"
+	"github.com/vbauerster/mpb/v8/decor"
 	"golang.org/x/time/rate"
 )
 
@@ -38,8 +40,18 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Fatalf("Failed to query app IDs: %v", err)
 		}
-		var progressContainer = mpb.New()
-		var bar = progressContainer.AddBar(int64(len(appIds)))
+		var progressContainer = mpb.New(
+			mpb.WithOutput(color.Output),
+			mpb.WithAutoRefresh(),
+		)
+		var bar = progressContainer.AddBar(
+			int64(len(appIds)),
+			mpb.PrependDecorators(
+				decor.Elapsed(decor.ET_STYLE_HHMMSS, decor.WCSyncSpaceR),
+				decor.CountersNoUnit("%d / %d", decor.WCSyncWidth),
+			),
+			mpb.AppendDecorators(decor.Percentage()),
+		)
 		for appid := range appIds {
 			func() {
 				defer bar.Increment()
