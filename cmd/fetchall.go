@@ -52,7 +52,7 @@ to quickly create a Cobra application.`,
 			),
 			mpb.AppendDecorators(decor.Percentage()),
 		)
-		for appid := range appIds {
+		for _, appid := range appIds {
 			func() {
 				defer bar.Increment()
 				var directory = filepath.Join(saveDir, fmt.Sprintf("app.%d", appid))
