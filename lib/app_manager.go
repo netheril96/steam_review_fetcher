@@ -72,20 +72,25 @@ func (p *AppManager) ResumeFetch() error {
 	if !p.appManagerMetadata.FinishTime.IsZero() {
 		return nil
 	}
-	raw, cursor, err := p.ApiClient.QueryAppReview(p.AppId, p.appManagerMetadata.Cursor)
-	if err != nil {
-		if errors.Is(err, &EndOfReview{}) {
-			p.appManagerMetadata.FinishTime = time.Now()
-			p.appManagerMetadata.Cursor = "*"
-			return p.Save()
+	for {
+		raw, cursor, err := p.ApiClient.QueryAppReview(p.AppId, p.appManagerMetadata.Cursor)
+		if err != nil {
+			if errors.Is(err, &EndOfReview{}) {
+				p.appManagerMetadata.FinishTime = time.Now()
+				p.appManagerMetadata.Cursor = "*"
+				return p.Save()
+			}
+			return err
 		}
-		return err
+		cursorHash := sha256.Sum224([]byte(cursor))
+		err = WriteRawZstd(filepath.Join(p.Directory, fmt.Sprintf("review.%s.jsonz", hex.EncodeToString(cursorHash[:]))), raw)
+		if err != nil {
+			return err
+		}
+		p.appManagerMetadata.Cursor = cursor
+		err = p.Save()
+		if err != nil {
+			return err
+		}
 	}
-	cursorHash := sha256.Sum224([]byte(cursor))
-	err = WriteRawZstd(filepath.Join(p.Directory, fmt.Sprintf("review.%s.jsonz", hex.EncodeToString(cursorHash[:]))), raw)
-	if err != nil {
-		return err
-	}
-	p.appManagerMetadata.Cursor = cursor
-	return p.Save()
 }
