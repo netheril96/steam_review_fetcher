@@ -13,6 +13,7 @@ import (
 	"github.com/go-resty/resty/v2"
 	steamreviewfetcher "github.com/netheril96/steam_review_fetcher/lib"
 	"github.com/spf13/cobra"
+	"github.com/vbauerster/mpb/v8"
 	"golang.org/x/time/rate"
 )
 
@@ -37,24 +38,31 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Fatalf("Failed to query app IDs: %v", err)
 		}
+		var progressContainer = mpb.New()
+		var bar = progressContainer.AddBar(int64(len(appIds)))
 		for appid := range appIds {
-			var directory = filepath.Join(saveDir, fmt.Sprintf("app.%d", appid))
-			err = os.MkdirAll(directory, 0755)
-			if err != nil {
-				log.Fatalf("Failed to make directory: %v", err)
-			}
-			var manager = steamreviewfetcher.AppManager{ApiClient: apiClient, Directory: directory, AppId: appid}
-			err = manager.Init()
-			if err != nil {
-				continue
-			}
-			if manager.ShouldSkip() {
-				continue
-			}
-			err = manager.ResumeFetch()
-			if err != nil {
-				continue
-			}
+			func() {
+				defer bar.Increment()
+				var directory = filepath.Join(saveDir, fmt.Sprintf("app.%d", appid))
+				var err = os.MkdirAll(directory, 0755)
+				if err != nil {
+					log.Fatalf("Failed to make directory: %v", err)
+				}
+				var manager = steamreviewfetcher.AppManager{ApiClient: apiClient, Directory: directory, AppId: appid}
+				err = manager.Init()
+				if err != nil {
+					log.Printf("Failed to init manager for app %d: %v", appid, err)
+					return
+				}
+				if manager.ShouldSkip() {
+					return
+				}
+				err = manager.ResumeFetch()
+				if err != nil {
+					log.Printf("Failed to fetch for app %d: %v", appid, err)
+					return
+				}
+			}()
 		}
 	},
 }
