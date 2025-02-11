@@ -12,6 +12,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/go-resty/resty/v2"
+	"github.com/goccy/go-json"
 	steamreviewfetcher "github.com/netheril96/steam_review_fetcher/lib"
 	"github.com/spf13/cobra"
 	"github.com/vbauerster/mpb/v8"
@@ -36,10 +37,15 @@ to quickly create a Cobra application.`,
 			return limiter.Wait(context.Background())
 		})
 		var apiClient = steamreviewfetcher.NewSteamApiClient(restyClient)
-		var appIds, err = apiClient.ListAppIds()
+		appIds, err := apiClient.ListAppIds()
 		if err != nil {
 			log.Fatalf("Failed to query app IDs: %v", err)
 		}
+		skipAppIds, err := loadSkipList()
+		if err != nil {
+			log.Fatalf("Failed to query skip list IDs: %v", err)
+		}
+		appIds = difference(appIds, skipAppIds)
 		var progressContainer = mpb.New(
 			mpb.WithOutput(color.Output),
 			mpb.WithAutoRefresh(),
@@ -79,8 +85,38 @@ to quickly create a Cobra application.`,
 	},
 }
 
+var skipListFileName string
+
 func init() {
 	rootCmd.AddCommand(fetchallCmd)
 	fetchallCmd.Flags().StringVar(&saveDir, "dir", "", "Where to save the data")
+	fetchallCmd.Flags().StringVar(&skipListFileName, "skip", "", "A JSON file for all app IDs to skip")
 	fetchallCmd.MarkFlagRequired("dir")
+}
+
+func loadSkipList() ([]int, error) {
+	if skipListFileName == "" {
+		return make([]int, 0), nil
+	}
+	data, err := os.ReadFile(skipListFileName)
+	if err != nil {
+		return nil, err
+	}
+	var result []int
+	err = json.Unmarshal(data, &result)
+	return result, err
+}
+
+func difference(a, b []int) []int {
+	mb := make(map[int]bool, len(b))
+	for _, x := range b {
+		mb[x] = true
+	}
+	var ab []int
+	for _, x := range a {
+		if _, ok := mb[x]; !ok {
+			ab = append(ab, x)
+		}
+	}
+	return ab
 }
