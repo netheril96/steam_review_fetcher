@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"path/filepath"
 	"time"
+	"slices"
 
 	"github.com/goccy/go-json"
 )
@@ -111,10 +112,5 @@ func (p *AppManager) ShouldSkip() bool {
 }
 
 func anyOf[T any](slice []T, predicate func(T) bool) bool {
-	for _, element := range slice {
-		if predicate(element) {
-			return true // Found an element that satisfies the predicate
-		}
-	}
-	return false // No element satisfied the predicate
+	return slices.ContainsFunc(slice, predicate) // No element satisfied the predicate
 }
